@@ -25,10 +25,6 @@ const DigitalHealthMonitor = () => {
     exercise: false
   });
 
-  useEffect(() => {
-    // Remove automatic welcome - will be triggered by button
-  }, []);
-
   const handleWelcome = () => {
     speak("Hi there! Welcome to your Digital Health Monitor. Let's keep you healthy and happy!");
     setWelcomed(true);
@@ -37,80 +33,62 @@ const DigitalHealthMonitor = () => {
 
   const speak = (text) => {
     if ('speechSynthesis' in window) {
-      // Cancel any ongoing speech
       window.speechSynthesis.cancel();
       
-      // Small delay to ensure cancellation completes
-      setTimeout(() => {
-        const msg = new SpeechSynthesisUtterance();
-        msg.text = text;
-        msg.rate = 0.85; // Slower, more gentle pace
-        msg.pitch = 1.3; // Higher pitch for sweeter voice
-        msg.volume = 1;
-        msg.lang = 'en-US';
+      const msg = new SpeechSynthesisUtterance();
+      msg.text = text;
+      msg.rate = 0.85;
+      msg.pitch = 1.3;
+      msg.volume = 1.0;
+      msg.lang = 'en-US';
+      
+      const voices = window.speechSynthesis.getVoices();
+      
+      if (voices.length > 0) {
+        const preferredVoiceNames = [
+          'Google US English Female',
+          'Microsoft Zira',
+          'Samantha',
+          'Karen',
+          'Victoria',
+          'Fiona',
+          'Moira',
+          'Tessa',
+          'Ava',
+          'Google UK English Female',
+          'Microsoft Jenny Online',
+          'Microsoft Aria Online'
+        ];
         
-        // Function to set voice
-        const setVoice = () => {
-          const voices = window.speechSynthesis.getVoices();
-          
-          // Priority list for sweet female voices
-          const preferredVoiceNames = [
-            'Google US English Female',
-            'Microsoft Zira',
-            'Samantha',
-            'Karen',
-            'Victoria',
-            'Fiona',
-            'Moira',
-            'Tessa',
-            'Ava',
-            'Google UK English Female',
-            'Microsoft Jenny Online',
-            'Microsoft Aria Online'
-          ];
-          
-          // Try to find preferred voices
-          let selectedVoice = null;
-          for (const name of preferredVoiceNames) {
-            selectedVoice = voices.find(voice => voice.name.includes(name));
-            if (selectedVoice) break;
-          }
-          
-          // If no preferred voice, find any English female voice
-          if (!selectedVoice) {
-            selectedVoice = voices.find(v => 
-              v.lang.startsWith('en') && 
-              (v.name.toLowerCase().includes('female') || 
-               v.name.toLowerCase().includes('woman') ||
-               (!v.name.toLowerCase().includes('male') && v.name.toLowerCase().includes('f')))
-            );
-          }
-          
-          // Last resort: any English voice that's not explicitly male
-          if (!selectedVoice) {
-            selectedVoice = voices.find(v => 
-              v.lang.startsWith('en') && 
-              !v.name.toLowerCase().includes('male')
-            );
-          }
-          
-          if (selectedVoice) {
-            msg.voice = selectedVoice;
-            console.log('Speaking with voice:', selectedVoice.name);
-          } else {
-            console.log('Using default voice');
-          }
-          
-          window.speechSynthesis.speak(msg);
-        };
-        
-        // Load voices if not already loaded
-        if (window.speechSynthesis.getVoices().length > 0) {
-          setVoice();
-        } else {
-          window.speechSynthesis.onvoiceschanged = setVoice;
+        let selectedVoice = null;
+        for (const name of preferredVoiceNames) {
+          selectedVoice = voices.find(voice => voice.name.includes(name));
+          if (selectedVoice) break;
         }
-      }, 100);
+        
+        if (!selectedVoice) {
+          selectedVoice = voices.find(v => 
+            v.lang.startsWith('en') && 
+            (v.name.toLowerCase().includes('female') || 
+             v.name.toLowerCase().includes('woman') ||
+             (!v.name.toLowerCase().includes('male') && v.name.toLowerCase().includes('f')))
+          );
+        }
+        
+        if (!selectedVoice) {
+          selectedVoice = voices.find(v => 
+            v.lang.startsWith('en') && 
+            !v.name.toLowerCase().includes('male')
+          );
+        }
+        
+        if (selectedVoice) {
+          msg.voice = selectedVoice;
+          console.log('Speaking with voice:', selectedVoice.name);
+        }
+      }
+      
+      window.speechSynthesis.speak(msg);
     } else {
       console.log('Speech synthesis not supported');
     }
@@ -273,7 +251,7 @@ const DigitalHealthMonitor = () => {
     const size = 300;
     const strokeWidth = 30;
     const radius = (size - strokeWidth) / 2;
-    const circumference = radius * Math.PI * 1.5; // 270 degrees = 1.5 * π * radius
+    const circumference = radius * Math.PI * 1.5;
     const progress = (value / 100) * circumference;
     
     const getColor = () => {
@@ -285,7 +263,6 @@ const DigitalHealthMonitor = () => {
     return (
       <div style={{ position: 'relative', width: size, height: size, margin: '0 auto' }}>
         <svg width={size} height={size} style={{ transform: 'rotate(-225deg)' }}>
-          {/* Background arc */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -296,7 +273,6 @@ const DigitalHealthMonitor = () => {
             strokeDasharray={`${circumference} ${circumference}`}
             strokeLinecap="round"
           />
-          {/* Progress arc */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -327,7 +303,6 @@ const DigitalHealthMonitor = () => {
 
   const BodyMap = () => {
     const burnout = calculateBurnout();
-    const habitsFollowed = Object.values(habits).filter(Boolean).length;
     
     const brainRisk = (burnout > 60 || stress >= 4 || sleep < 6) ? "high" : (burnout > 30 || stress >= 3) ? "medium" : "low";
     const eyesRisk = (screen > 10 || burnout > 60) ? "high" : (screen > 8) ? "medium" : "low";
@@ -712,15 +687,15 @@ const DigitalHealthMonitor = () => {
         }
         
         #menu-toggle {
-  display: none;
-  margin-bottom: 16px;
-}
+          display: none;
+          margin-bottom: 16px;
+        }
 
-@media (max-width: 768px) {
-  #menu-toggle {
-    display: block;
-  }
-}
+        @media (max-width: 768px) {
+          #menu-toggle {
+            display: block;
+          }
+        }
 
         html, body, #root {
           width: 100%;
@@ -731,24 +706,21 @@ const DigitalHealthMonitor = () => {
         }
         
         .app-container {
-  background: linear-gradient(135deg, #1a0b2e 0%, #2d1b4e 50%, #1a0b2e 100%);
-  min-height: 100vh;
-  width: 100%;
-  color: white;
-  padding: 20px;
+          background: linear-gradient(135deg, #1a0b2e 0%, #2d1b4e 50%, #1a0b2e 100%);
+          min-height: 100vh;
+          width: 100%;
+          color: white;
+          padding: 20px;
+          display: grid;
+          grid-template-columns: 280px 1fr;
+          gap: 24px;
+        }
 
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 24px;
-}
-
-/* Tablet */
-@media (max-width: 1024px) {
-  .app-container {
-    grid-template-columns: 1fr;
-  }
-}
-
+        @media (max-width: 1024px) {
+          .app-container {
+            grid-template-columns: 1fr;
+          }
+        }
         
         .main-content {
           width: 100%;
@@ -1584,12 +1556,12 @@ const DigitalHealthMonitor = () => {
 
       <div className="main-content">
         <button
-  className="nav-button"
-  id="menu-toggle"
-  onClick={() => setShowSidebar(!showSidebar)}
->
-  ☰ Menu
-</button>
+          className="nav-button"
+          id="menu-toggle"
+          onClick={() => setShowSidebar(!showSidebar)}
+        >
+          ☰ Menu
+        </button>
 
         {showWelcome && (
           <div className="glass" style={{ textAlign: 'center', background: 'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(236,72,153,0.2))', border: '2px solid rgba(168,85,247,0.5)' }}>
