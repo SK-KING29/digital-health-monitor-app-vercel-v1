@@ -25,6 +25,17 @@ const DigitalHealthMonitor = () => {
     exercise: false
   });
 
+  useEffect(() => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.getVoices();
+  
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+  }, []);
+  
+
   const handleWelcome = () => {
   speak(
     "Hi! I’m your Digital Health Assistant. I’ll help you track screen habits, predict burnout, and guide you toward healthier routines. Let’s begin.",
@@ -35,68 +46,30 @@ const DigitalHealthMonitor = () => {
 };
 
 
-  const speak = (text) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      
-      const msg = new SpeechSynthesisUtterance();
-      msg.text = text;
-      msg.rate = 0.85;
-      msg.pitch = 1.3;
-      msg.volume = 1.0;
-      msg.lang = 'en-US';
-      
-      const voices = window.speechSynthesis.getVoices();
-      
-      if (voices.length > 0) {
-        const preferredVoiceNames = [
-          'Google US English Female',
-          'Microsoft Zira',
-          'Samantha',
-          'Karen',
-          'Victoria',
-          'Fiona',
-          'Moira',
-          'Tessa',
-          'Ava',
-          'Google UK English Female',
-          'Microsoft Jenny Online',
-          'Microsoft Aria Online'
-        ];
-        
-        let selectedVoice = null;
-        for (const name of preferredVoiceNames) {
-          selectedVoice = voices.find(voice => voice.name.includes(name));
-          if (selectedVoice) break;
-        }
-        
-        if (!selectedVoice) {
-          selectedVoice = voices.find(v => 
-            v.lang.startsWith('en') && 
-            (v.name.toLowerCase().includes('female') || 
-             v.name.toLowerCase().includes('woman') ||
-             (!v.name.toLowerCase().includes('male') && v.name.toLowerCase().includes('f')))
-          );
-        }
-        
-        if (!selectedVoice) {
-          selectedVoice = voices.find(v => 
-            v.lang.startsWith('en') && 
-            !v.name.toLowerCase().includes('male')
-          );
-        }
-        
-        if (selectedVoice) {
-          msg.voice = selectedVoice;
-          console.log('Speaking with voice:', selectedVoice.name);
-        }
-      }
-      
-      window.speechSynthesis.speak(msg);
-    } else {
-      console.log('Speech synthesis not supported');
-    }
-  };
+const speak = (text, instant = false) => {
+  if (!("speechSynthesis" in window)) return;
+
+  window.speechSynthesis.cancel();
+
+  const msg = new SpeechSynthesisUtterance(text);
+
+  msg.volume = 1;                 // loud
+  msg.rate = instant ? 1.1 : 0.95; // fast welcome
+  msg.pitch = 1.2;
+  msg.lang = "en-US";
+
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) {
+    const voice = voices.find(v =>
+      v.lang.startsWith("en") &&
+      !v.name.toLowerCase().includes("male")
+    );
+    if (voice) msg.voice = voice;
+  }
+
+  window.speechSynthesis.speak(msg);
+};
+
 
   const toggleHabit = (key) => {
     setHabits(prev => ({ ...prev, [key]: !prev[key] }));
@@ -414,6 +387,44 @@ const DigitalHealthMonitor = () => {
       </div>
     );
   };
+  // 🔮 30-Day Habit Outcome Simulator
+const getHabitOutcomeSimulation = ({ habits, screen, sleep }) => {
+  const habitsCount = Object.values(habits).filter(Boolean).length;
+  let outcomes = [];
+
+  // Burnout prediction
+  if (habitsCount >= 6 && sleep >= 7 && screen <= 6) {
+    outcomes.push("🟢 Burnout risk is likely to decrease over the next 30 days.");
+  } else if (habitsCount >= 4) {
+    outcomes.push("🟡 Burnout risk may remain stable with minor improvements.");
+  } else {
+    outcomes.push("🔴 Burnout risk is likely to increase if habits continue.");
+  }
+
+  // Eye health
+  if (habits.breaks && screen <= 6) {
+    outcomes.push("🟢 Eye strain risk reduces with regular screen breaks.");
+  } else {
+    outcomes.push("🔴 High chance of eye strain and digital fatigue.");
+  }
+
+  // Sleep & recovery
+  if (sleep >= 7 && habits.bedtime) {
+    outcomes.push("🟢 Sleep quality and mental recovery improve.");
+  } else {
+    outcomes.push("🟡 Sleep recovery may remain inconsistent.");
+  }
+
+  // Physical health
+  if (habits.exercise && habits.outdoor) {
+    outcomes.push("🟢 Physical energy, posture, and focus improve.");
+  } else {
+    outcomes.push("🟡 Physical fatigue and posture issues may continue.");
+  }
+
+  return outcomes;
+};
+
 
   const renderDashboard = () => {
     const burnout = calculateBurnout();
@@ -613,6 +624,31 @@ const DigitalHealthMonitor = () => {
             </div>
           </>
         )}
+        <div className="glass" style={{ marginTop: "32px" }}>
+  <h2 className="section-title">🔮 30-Day Habit Outcome Simulator</h2>
+
+  <p style={{ textAlign: "center", opacity: 0.85, marginBottom: "20px" }}>
+    This simulation shows the possible health impact if your current habits
+    continue for the next 30 days.
+  </p>
+
+  {getHabitOutcomeSimulation({ habits, screen, sleep }).map((outcome, index) => (
+    <div
+      key={index}
+      style={{
+        padding: "14px 18px",
+        marginBottom: "12px",
+        borderRadius: "14px",
+        background: "rgba(255,255,255,0.08)",
+        fontSize: "16px",
+        lineHeight: "1.6"
+      }}
+    >
+      {outcome}
+    </div>
+  ))}
+</div>
+
       </>
     );
   };
