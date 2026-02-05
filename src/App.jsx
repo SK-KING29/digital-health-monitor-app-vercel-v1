@@ -1579,7 +1579,7 @@ const DigitalHealthMonitor = () => {
           📈 Usage Trends
         </button>
         <button 
-          className={`nav-button ${page === 'trends' ? 'active' : ''}`}
+          className={`nav-button ${page === 'demo' ? 'active' : ''}`}
           
         >
            demo
