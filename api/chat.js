@@ -6,7 +6,13 @@ export default async function handler(req, res) {
   try {
     const { question } = req.body;
 
-    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({
+        reply: "❌ OpenAI API key not found"
+      });
+    }
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -17,29 +23,37 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: "You are a friendly AI health assistant. Give short practical advice."
+            content:
+              "You are an AI health assistant. Give short, clear, friendly health advice."
           },
           {
             role: "user",
             content: question
           }
-        ]
+        ],
+        temperature: 0.7
       })
     });
 
-    const data = await openaiRes.json();
+    const data = await response.json();
 
-    // ✅ THIS LINE IS THE KEY
-    const aiReply = data.choices?.[0]?.message?.content;
+    // 🔴 DEBUG LOG (VERY IMPORTANT)
+    console.log("OPENAI RESPONSE:", JSON.stringify(data));
+
+    if (!data.choices || !data.choices[0]) {
+      return res.status(200).json({
+        reply: "❌ OpenAI returned no choices"
+      });
+    }
 
     return res.status(200).json({
-      reply: aiReply || "AI could not generate a response."
+      reply: data.choices[0].message.content
     });
 
-  } catch (error) {
-    console.error("AI ERROR:", error);
+  } catch (err) {
+    console.error("SERVER ERROR:", err);
     return res.status(500).json({
-      reply: "AI server error"
+      reply: "❌ Server crashed"
     });
   }
 }
