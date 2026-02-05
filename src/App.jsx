@@ -658,7 +658,7 @@ return (
     </button>
 
     <div className="glass" style={{ marginTop: "32px" }}>
-      <h2 className="section-title">💬 AI Health Chatbot (Powered by Claude)</h2>
+      <h2 className="section-title">💬 AI Health Chatbot </h2>
       
       <div style={{
         maxHeight: "350px",
@@ -702,7 +702,7 @@ return (
             marginTop: "12px",
             textAlign: "center"
           }}>
-            🤖 Claude is thinking...
+            🤖 AI-ASSISTANT is thinking...
           </div>
         )}
       </div>
