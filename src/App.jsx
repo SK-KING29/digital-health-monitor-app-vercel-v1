@@ -15,6 +15,11 @@ const DigitalHealthMonitor = () => {
   const [welcomed, setWelcomed] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const [aiMessage, setAiMessage] = useState("");
+ const [chatHistory, setChatHistory] = useState([
+  { sender: "ai", text: "Hi 👋 I’m your AI Health Assistant. Ask me anything!" }
+]);
+const [chatInput, setChatInput] = useState("");
+
   const [habits, setHabits] = useState({
     water: false,
     outdoor: false,
@@ -120,6 +125,54 @@ const speak = (text, instant = false) => {
   
     return message;
   };
+  const getAIChatResponse = (question) => {
+    const burnout = calculateBurnout();
+    const q = question.toLowerCase();
+  
+    if (q.includes("burnout")) {
+      return burnout > 60
+        ? "Your burnout level is high. Reduce screen time, improve sleep, and take frequent breaks."
+        : burnout > 30
+        ? "You have moderate burnout signs. Small habit improvements will help."
+        : "Your burnout level is low. Maintain your current healthy routine.";
+    }
+  
+    if (q.includes("sleep")) {
+      return sleep < 7
+        ? "You should aim for at least 7–8 hours of sleep for proper recovery."
+        : "Your sleep duration looks good. Keep it consistent.";
+    }
+  
+    if (q.includes("screen")) {
+      return screen > 8
+        ? "High screen exposure detected. Follow the 20-20-20 eye rule."
+        : "Your screen time is within a healthy range.";
+    }
+  
+    if (q.includes("stress")) {
+      return stress >= 4
+        ? "Your stress level is high. Try breathing exercises and short breaks."
+        : "Your stress level is manageable. Stay mindful.";
+    }
+  
+    return "I’m here to help! Ask me about burnout, sleep, screen time, or stress.";
+  };
+  const sendChatMessage = () => {
+    if (!chatInput.trim()) return;
+  
+    const userMsg = { sender: "user", text: chatInput };
+    const aiReply = {
+      sender: "ai",
+      text: getAIChatResponse(chatInput)
+    };
+  
+    setChatHistory(prev => [...prev, userMsg, aiReply]);
+    setChatInput("");
+  
+    speak(aiReply.text);
+  };
+  
+  
 
   const getHealthPredictions = (burnout, habitsCount) => {
     const predictions = { immediate_risks: [], long_term_outcomes: [], recovery_plan: [], category: '' };
@@ -264,6 +317,9 @@ const speak = (text, instant = false) => {
     setTimeout(() => {
       speak(aiResponse);
     }, 1200);
+
+    
+    
   };
   
 
@@ -596,6 +652,80 @@ const getHabitOutcomeSimulation = ({ habits, screen, sleep }) => {
         <button className="analyze-button" onClick={generateAnalysis}>
           🏥 Generate Health Analysis & Predictions
         </button>
+
+        <div className="glass" style={{ marginTop: "32px" }}>
+  <h2 className="section-title">💬 AI Health Chatbot</h2>
+
+  <div
+    style={{
+      maxHeight: "250px",
+      overflowY: "auto",
+      marginBottom: "16px",
+      padding: "12px",
+      background: "rgba(0,0,0,0.35)",
+      borderRadius: "14px"
+    }}
+  >
+    {chatHistory.map((msg, index) => (
+      <div
+        key={index}
+        style={{
+          textAlign: msg.sender === "user" ? "right" : "left",
+          marginBottom: "10px"
+        }}
+      >
+        <span
+          style={{
+            display: "inline-block",
+            padding: "10px 14px",
+            borderRadius: "14px",
+            background:
+              msg.sender === "user"
+                ? "linear-gradient(135deg,#a855f7,#ec4899)"
+                : "rgba(255,255,255,0.18)",
+            maxWidth: "80%",
+            fontSize: "15px"
+          }}
+        >
+          {msg.text}
+        </span>
+      </div>
+    ))}
+  </div>
+
+  <div style={{ display: "flex", gap: "10px" }}>
+    <input
+      type="text"
+      value={chatInput}
+      onChange={(e) => setChatInput(e.target.value)}
+      placeholder="Ask AI about burnout, sleep, screen time..."
+      style={{
+        flex: 1,
+        padding: "12px",
+        borderRadius: "10px",
+        border: "none",
+        outline: "none",
+        fontSize: "15px"
+      }}
+    />
+
+    <button
+      onClick={sendChatMessage}
+      style={{
+        padding: "12px 22px",
+        borderRadius: "10px",
+        border: "none",
+        background: "linear-gradient(135deg,#a855f7,#ec4899)",
+        color: "white",
+        fontWeight: 600,
+        cursor: "pointer"
+      }}
+    >
+      Send
+    </button>
+  </div>
+</div>
+
 
         {lastCheck && (
           <>
