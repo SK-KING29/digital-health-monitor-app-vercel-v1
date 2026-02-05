@@ -128,47 +128,24 @@ const speak = (text, instant = false) => {
   };
   const getAIChatResponse = async (question) => {
     try {
-      const response = await fetch("https://api.openai.com/v1/responses", {
+      const response = await fetch("/api/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
-          input: [
-            {
-              role: "system",
-              content: [
-                {
-                  type: "text",
-                  text: `You are a friendly AI health assistant.
-  User data:
-  - Screen time: ${screen} hours
-  - Sleep: ${sleep} hours
-  - Stress: ${stress}/5
-  Give short, practical advice.`
-                }
-              ]
-            },
-            {
-              role: "user",
-              content: [{ type: "text", text: question }]
-            }
-          ]
+          question,
+          context: {
+            screen,
+            sleep,
+            stress
+          }
         })
       });
   
       const data = await response.json();
-  
-      if (!data.output_text) {
-        return "⚠️ AI response error. Please try again.";
-      }
-  
-      return data.output_text;
+      return data.reply || "⚠️ AI did not reply";
     } catch (error) {
       console.error(error);
-      return "⚠️ AI is unavailable right now.";
+      return "⚠️ AI server error";
     }
   };
   
@@ -691,7 +668,7 @@ const getHabitOutcomeSimulation = ({ habits, screen, sleep }) => {
       🤖 AI is thinking...
     </div>
   )}
-  
+
     {chatHistory.map((msg, index) => (
       <div
         key={index}
