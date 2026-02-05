@@ -14,6 +14,7 @@ const DigitalHealthMonitor = () => {
   const [lastCheck, setLastCheck] = useState(null);
   const [welcomed, setWelcomed] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [aiMessage, setAiMessage] = useState("");
   const [habits, setHabits] = useState({
     water: false,
     outdoor: false,
@@ -87,10 +88,37 @@ const speak = (text, instant = false) => {
     else if (stress >= 3) burnout += 8;
     if (mood <= 2) burnout += 15;
     else if (mood <= 3) burnout += 8;
-    
+
     const habitsFollowed = Object.values(habits).filter(Boolean).length;
     burnout += (8 - habitsFollowed) * 4;
     return Math.min(burnout, 100);
+  };
+  const getAIHealthCoachMessage = ({ burnout, screen, sleep, stress, habits }) => {
+    let message = "";
+  
+    if (burnout <= 30) {
+      message = "🟢 You're doing great! Your habits are protecting you from burnout. Keep maintaining balance and consistency.";
+    } 
+    else if (burnout <= 60) {
+      message = "🟡 I notice early signs of digital fatigue. Try reducing screen time and improving sleep consistency.";
+    } 
+    else {
+      message = "🔴 I’m concerned. Your burnout level is high. Immediate lifestyle adjustments are strongly recommended.";
+    }
+  
+    if (sleep < 7) {
+      message += " 😴 Improving sleep will significantly boost recovery.";
+    }
+  
+    if (screen > 8) {
+      message += " 📱 Excessive screen exposure is impacting your mental clarity.";
+    }
+  
+    if (habits.exercise) {
+      message += " 🏃 Your exercise habit is a strong positive factor.";
+    }
+  
+    return message;
   };
 
   const getHealthPredictions = (burnout, habitsCount) => {
@@ -195,18 +223,49 @@ const speak = (text, instant = false) => {
     const burnout = calculateBurnout();
     const habitsFollowed = Object.values(habits).filter(Boolean).length;
     const today = new Date().toISOString().split('T')[0];
-    
-    setHistory(prev => [...prev, { Date: today, Burnout: burnout, Screen: screen, Sleep: sleep, Work: work }]);
-    setLastCheck({ burnout, screen, sleep, work, habits: habitsFollowed, stress, mood });
-
-    const message = burnout <= 30 
-      ? `Great news! Your score is ${burnout} percent. You're doing amazing!`
-      : burnout <= 60
-      ? `Your score is ${burnout} percent. Time to make some healthy changes!`
-      : `Alert! Your score is ${burnout} percent. Please take care of yourself right away.`;
-    
+  
+    setHistory(prev => [
+      ...prev,
+      { Date: today, Burnout: burnout, Screen: screen, Sleep: sleep, Work: work }
+    ]);
+  
+    setLastCheck({
+      burnout,
+      screen,
+      sleep,
+      work,
+      habits: habitsFollowed,
+      stress,
+      mood
+    });
+  
+    // 1️⃣ Main system message
+    const message =
+      burnout <= 30
+        ? `Great news! Your score is ${burnout} percent. You're doing amazing!`
+        : burnout <= 60
+        ? `Your score is ${burnout} percent. Time to make some healthy changes!`
+        : `Alert! Your score is ${burnout} percent. Please take care of yourself right away.`;
+  
+    // 2️⃣ AI coach message (CREATE FIRST)
+    const aiResponse = getAIHealthCoachMessage({
+      burnout,
+      screen,
+      sleep,
+      stress,
+      habits
+    });
+  
+    // 3️⃣ Update AI text on screen
+    setAiMessage(aiResponse);
+  
+    // 4️⃣ Speak messages in order (NO overlap)
     speak(message);
+    setTimeout(() => {
+      speak(aiResponse);
+    }, 1200);
   };
+  
 
   const HabitCard = ({ habitKey, icon, label }) => {
     const active = habits[habitKey];
@@ -542,6 +601,23 @@ const getHabitOutcomeSimulation = ({ habits, screen, sleep }) => {
           <>
             <div className="glass" style={{ marginTop: '24px' }}>
               <GaugeChart value={lastCheck.burnout} />
+              {aiMessage && (
+  <div className="glass" style={{ marginTop: "24px" }}>
+    <h2 className="section-title">🤖 AI Health Coach</h2>
+    <div
+      style={{
+        background: "rgba(0,0,0,0.4)",
+        padding: "20px",
+        borderRadius: "16px",
+        fontSize: "18px",
+        lineHeight: "1.6"
+      }}
+    >
+      {aiMessage}
+    </div>
+  </div>
+)}
+
             </div>
             <p style={{
   textAlign: 'center',
