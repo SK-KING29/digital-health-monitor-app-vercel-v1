@@ -1580,7 +1580,7 @@ const DigitalHealthMonitor = () => {
         </button>
         <button 
           className={`nav-button ${page === 'trends' ? 'active' : ''}`}
-          onClick={() => setPage('trends')}
+          
         >
            demo
         </button>
