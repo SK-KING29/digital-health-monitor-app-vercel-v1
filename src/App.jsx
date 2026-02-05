@@ -140,10 +140,12 @@ Current context: ${contextInfo}
 
 Provide personalized advice based on the user's specific situation.`;
 
+  // Fixed API call - this works in Claude artifacts without an API key
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      // Note: No API key needed when running in Claude artifacts
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
@@ -155,6 +157,10 @@ Provide personalized advice based on the user's specific situation.`;
     })
   });
 
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+
   const data = await response.json();
   
   if (data.content && data.content[0] && data.content[0].text) {
@@ -164,7 +170,7 @@ Provide personalized advice based on the user's specific situation.`;
   return "I'm here to help! Could you rephrase your question?";
 } catch (error) {
   console.error("AI Error:", error);
-  return "I'm having trouble connecting right now. Try asking about reducing screen time, improving sleep, or managing stress!";
+  return "I'm having trouble connecting right now. Let me help with some general advice: Try the 20-20-20 rule for screen breaks, aim for 7-8 hours of sleep, and take regular movement breaks!";
 }
 };
 
@@ -715,7 +721,8 @@ return (
             border: "none",
             outline: "none",
             fontSize: "15px",
-            background: "rgba(255,255,255,0.9)"
+            background: "rgba(255,255,255,0.9)",
+            color: "#000"
           }}
         />
 
