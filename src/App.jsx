@@ -15,6 +15,7 @@ const DigitalHealthMonitor = () => {
   const [welcomed, setWelcomed] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const [aiMessage, setAiMessage] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
  const [chatHistory, setChatHistory] = useState([
   { sender: "ai", text: "Hi 👋 I’m your AI Health Assistant. Ask me anything!" }
 ]);
@@ -125,52 +126,70 @@ const speak = (text, instant = false) => {
   
     return message;
   };
-  const getAIChatResponse = (question) => {
-    const burnout = calculateBurnout();
-    const q = question.toLowerCase();
+  const getAIChatResponse = async (question) => {
+    try {
+      const response = await fetch("https://api.openai.com/v1/responses", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          input: [
+            {
+              role: "system",
+              content: [
+                {
+                  type: "text",
+                  text: `You are a friendly AI health assistant.
+  User data:
+  - Screen time: ${screen} hours
+  - Sleep: ${sleep} hours
+  - Stress: ${stress}/5
+  Give short, practical advice.`
+                }
+              ]
+            },
+            {
+              role: "user",
+              content: [{ type: "text", text: question }]
+            }
+          ]
+        })
+      });
   
-    if (q.includes("burnout")) {
-      return burnout > 60
-        ? "Your burnout level is high. Reduce screen time, improve sleep, and take frequent breaks."
-        : burnout > 30
-        ? "You have moderate burnout signs. Small habit improvements will help."
-        : "Your burnout level is low. Maintain your current healthy routine.";
+      const data = await response.json();
+  
+      if (!data.output_text) {
+        return "⚠️ AI response error. Please try again.";
+      }
+  
+      return data.output_text;
+    } catch (error) {
+      console.error(error);
+      return "⚠️ AI is unavailable right now.";
     }
-  
-    if (q.includes("sleep")) {
-      return sleep < 7
-        ? "You should aim for at least 7–8 hours of sleep for proper recovery."
-        : "Your sleep duration looks good. Keep it consistent.";
-    }
-  
-    if (q.includes("screen")) {
-      return screen > 8
-        ? "High screen exposure detected. Follow the 20-20-20 eye rule."
-        : "Your screen time is within a healthy range.";
-    }
-  
-    if (q.includes("stress")) {
-      return stress >= 4
-        ? "Your stress level is high. Try breathing exercises and short breaks."
-        : "Your stress level is manageable. Stay mindful.";
-    }
-  
-    return "I’m here to help! Ask me about burnout, sleep, screen time, or stress.";
   };
-  const sendChatMessage = () => {
+  
+  
+  const sendChatMessage = async () => {
     if (!chatInput.trim()) return;
   
     const userMsg = { sender: "user", text: chatInput };
-    const aiReply = {
-      sender: "ai",
-      text: getAIChatResponse(chatInput)
-    };
-  
-    setChatHistory(prev => [...prev, userMsg, aiReply]);
+    setChatHistory(prev => [...prev, userMsg]);
     setChatInput("");
+    setAiLoading(true);
   
-    speak(aiReply.text);
+    const aiText = await getAIChatResponse(chatInput);
+  
+    const aiMsg = { sender: "ai", text: aiText };
+    setChatHistory(prev => [...prev, aiMsg]);
+    setAiLoading(false);
+  
+    speak(aiText);
   };
+  
   
   
 
@@ -666,6 +685,13 @@ const getHabitOutcomeSimulation = ({ habits, screen, sleep }) => {
       borderRadius: "14px"
     }}
   >
+    {/* 🔄 AI Loading Indicator */}
+  {aiLoading && (
+    <div style={{ opacity: 0.6, fontStyle: "italic", marginBottom: "8px" }}>
+      🤖 AI is thinking...
+    </div>
+  )}
+  
     {chatHistory.map((msg, index) => (
       <div
         key={index}
